@@ -1,0 +1,8 @@
+name,rows,columns,min_timestamp,max_timestamp,unique_dates,missing_values,duplicate_timestamps,timestamp_parse_failures,monotonic_timestamps,ohlc_high_violations,ohlc_low_violations,min_time,max_time
+raw/SPY_1min_firstratedata.csv,207824,"timestamp, open, high, low, close, volume",2022-09-30 04:00:00,2023-09-29 19:48:00,251,0,0,0,True,0,0,04:00:00,20:00:00
+raw/SPY_1min_firstratedata.csv RTH-only,97744,"timestamp, open, high, low, close, volume",2022-09-30 09:30:00,2023-09-29 15:59:00,251,0,0,0,True,0,0,09:30:00,15:59:00
+vendor_sample/SPY_1day_sample.csv,11,"timestamp, open, high, low, close, volume",2026-03-09 00:00:00,2026-03-23 00:00:00,11,0,0,0,True,0,0,00:00:00,00:00:00
+vendor_sample/SPY_1hour_sample.csv,176,"timestamp, open, high, low, close, volume",2026-03-09 04:00:00,2026-03-23 19:00:00,11,0,0,0,True,0,0,04:00:00,19:00:00
+vendor_sample/SPY_1min_sample.csv,10321,"timestamp, open, high, low, close, volume",2026-03-09 04:00:00,2026-03-23 19:59:00,11,0,0,0,True,0,0,04:00:00,19:59:00
+vendor_sample/SPY_30min_sample.csv,352,"timestamp, open, high, low, close, volume",2026-03-09 04:00:00,2026-03-23 19:30:00,11,0,0,0,True,0,0,04:00:00,19:30:00
+vendor_sample/SPY_5min_sample.csv,2112,"timestamp, open, high, low, close, volume",2026-03-09 04:00:00,2026-03-23 19:55:00,11,0,0,0,True,0,0,04:00:00,19:55:00
