@@ -1,47 +1,74 @@
 # SPY Research
 
-A narrow, modular quant research project focused on SPY intraday signal detection first.
+A serious, profit-oriented SPY intraday quant research project for a solo retail developer.
 
-## Current scope
+The strategy is to narrow the battlefield: SPY first, intraday direction first, underlying signal first, options later, execution last. The project also serves as a serious ML / deep-learning learning path, but advanced models must be introduced in the right research order.
 
-This project is intentionally limited to:
+## Current focus
 
-1. SPY underlying data only
-2. 1-minute raw OHLCV data
-3. cleaned/resampled 1m, 5m, 30m, and 1h bars
-4. deterministic signal prototypes
-5. underlying-price backtests only
+Current phase:
 
-Do **not** add options, broker APIs, live execution, broad universes, or ML until the signal layer is validated.
+```text
+Phase 2: Baseline intraday behavior study
+```
+
+Current near-term goal:
+
+```text
+Generate session-level SPY behavior summaries before building the first serious signal candidate.
+```
+
+This project is currently focused on:
+
+- SPY only.
+- 1-minute OHLCV raw data.
+- Regular trading hours processed data.
+- 1m / 5m / 30m / 1h bars.
+- Baseline intraday behavior research.
+- Deterministic signal prototypes.
+- Underlying-only backtests.
+
+ML, deep learning, options mapping, and execution are planned future layers, not abandoned goals.
+
+## Repo layout
+
+```text
+spy_research/
+├─ AGENTS.md
+├─ PROJECT_PLAN.md
+├─ README.md
+├─ pyproject.toml
+├─ uv.lock
+├─ .python-version
+│
+├─ data/
+│  ├─ raw/
+│  └─ processed/
+│
+├─ scripts/
+├─ src/spy_research/
+├─ notebooks/
+├─ outputs/
+├─ tests/
+└─ docs/
+```
 
 ## Environment
 
-This repo is managed with `uv`.
+This repo uses `uv`.
 
-Recommended Windows location:
+Set up or refresh the environment:
 
 ```powershell
-C:\Users\sanshida\Desktop\spy_research
+uv sync
 ```
 
-Set up:
+Run the main checks:
 
 ```powershell
-cd $HOME\Desktop\spy_research
-
-# This zip intentionally does not include .venv, .git, or uv.lock.
-# Recreate the lock/environment locally:
-Remove-Item -Recurse -Force .venv -ErrorAction SilentlyContinue
-Remove-Item -Force uv.lock -ErrorAction SilentlyContinue
-
-uv python install
-uv sync --extra dev
-```
-
-Check imports:
-
-```powershell
-uv run python -c "import pandas, numpy, pyarrow, matplotlib; print('core imports ok')"
+uv run python scripts\validate_data.py
+uv run python scripts\build_processed_data.py
+uv run pytest
 ```
 
 Start JupyterLab:
@@ -50,71 +77,62 @@ Start JupyterLab:
 uv run jupyter lab
 ```
 
-## Data layout
+When adding Python packages:
+
+```powershell
+uv add <package>
+```
+
+Commit both:
 
 ```text
-data/
-  raw/
-    SPY_1min_firstratedata.csv
-  vendor_sample/
-    SPY_*_sample.csv
-    _readme_documentation.txt
-  processed/
-    generated project outputs go here
+pyproject.toml
+uv.lock
 ```
 
-Important: your uploaded folder had `data/procesed/` with one `s`. I moved those files to `data/vendor_sample/` because they are vendor-provided 2026 sample files, not processed outputs derived from the 2022-2023 raw file.
+Do not commit `.venv/`.
 
-## Validate data
+## Data
 
-```powershell
-uv run python scripts\validate_data.py
-```
+For the current SPY-only dataset, raw and processed data files are small enough to track in Git so the repo can move between Mac, Windows, home, and work.
 
-This writes a report to:
+Current important files:
 
 ```text
-outputs/reports/data_validation_summary.csv
+data/raw/SPY_1min_firstratedata.csv
+data/processed/spy_1m_rth.parquet
+data/processed/spy_5m_rth.parquet
+data/processed/spy_30m_rth.parquet
+data/processed/spy_1h_rth.parquet
 ```
 
-## Build processed bars from raw
+If the data later expands into multi-year, multi-symbol, or options-chain data, the project should move to a separate data-management strategy instead of committing everything.
 
-Default behavior keeps regular trading hours only, 09:30-16:00 US Eastern timestamps, because it is the cleanest starting point for Stage 1.
+## Documentation map
 
-```powershell
-uv run python scripts\build_processed_data.py
-```
+- `README.md` — short human onboarding and setup.
+- `AGENTS.md` — Codex / AI-agent operating rules.
+- `PROJECT_PLAN.md` — roadmap, current phase, and progress log.
+- `docs/DATA_VALIDATION_REPORT.md` — historical data-validation snapshot.
 
-Outputs:
+## Next milestone
+
+Build the baseline intraday behavior study.
+
+First target output:
 
 ```text
-data/processed/spy_1m.parquet
-data/processed/spy_5m.parquet
-data/processed/spy_30m.parquet
-data/processed/spy_1h.parquet
+outputs/reports/session_summary.csv
 ```
 
-To include premarket and after-hours bars:
+Useful columns:
 
-```powershell
-uv run python scripts\build_processed_data.py --include-extended
-```
-
-To also write CSV copies for manual inspection:
-
-```powershell
-uv run python scripts\build_processed_data.py --csv
-```
-
-## Research discipline
-
-Keep every candidate setup separated into:
-
-- hypothesis
-- features
-- label
-- decision rule
-- evaluation
-- implementation complexity
-
-A stopped-out trade that later becomes a winner is not evidence to redesign the whole system. First test whether it indicates stop width, early entry, re-entry, or normal path shape for that setup.
+- date,
+- session open/high/low/close,
+- full-day range,
+- first 30-minute range,
+- first 60-minute range,
+- gap from previous close,
+- close location inside daily range,
+- time of high,
+- time of low.
