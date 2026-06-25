@@ -124,13 +124,36 @@ function formatBar(bar: ApiBar): string {
 }
 
 function toCandleData(bars: ApiBar[]): CandlestickData[] {
-  return bars.map((bar) => ({
-    time: bar.time as UTCTimestamp,
-    open: Number(bar.open),
-    high: Number(bar.high),
-    low: Number(bar.low),
-    close: Number(bar.close),
-  }));
+  const byTime = new Map<number, CandlestickData>();
+
+  for (const bar of bars) {
+    const time = Number(bar.time);
+    const open = Number(bar.open);
+    const high = Number(bar.high);
+    const low = Number(bar.low);
+    const close = Number(bar.close);
+
+    if (
+      !Number.isFinite(time) ||
+      !Number.isFinite(open) ||
+      !Number.isFinite(high) ||
+      !Number.isFinite(low) ||
+      !Number.isFinite(close)
+    ) {
+      continue;
+    }
+
+    // If duplicate chart times exist, keep the later bar.
+    byTime.set(time, {
+      time: time as UTCTimestamp,
+      open,
+      high,
+      low,
+      close,
+    });
+  }
+
+  return [...byTime.values()].sort((a, b) => Number(a.time) - Number(b.time));
 }
 
 async function loadBars(): Promise<void> {
@@ -149,7 +172,8 @@ async function loadBars(): Promise<void> {
 
   latestBars = (await res.json()) as ApiBar[];
 
-  candleSeries.setData(toCandleData(latestBars));
+  const candleData = toCandleData(latestBars);
+  candleSeries.setData(candleData);
   chart.timeScale().fitContent();
 
   setStatus(

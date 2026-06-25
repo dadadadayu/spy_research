@@ -91,6 +91,10 @@ def normalize_bars(df: pd.DataFrame) -> pd.DataFrame:
     df["time"] = (ts_utc.astype("int64") // 1_000_000_000).astype(int)
     df["timestamp_et"] = df["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S")
 
+    # Lightweight Charts requires strictly unique, ascending time values.
+    df = df.drop_duplicates(subset=["time"], keep="last")
+    df = df.sort_values("time")
+
     out_cols = ["time", "timestamp_et", "open", "high", "low", "close"]
     if "volume" in df.columns:
         out_cols.append("volume")
@@ -130,3 +134,22 @@ def bars(
         df = df.tail(limit)
 
     return df.to_dict(orient="records")
+
+
+@app.get("/api/debug")
+def debug(timeframe: Timeframe = Query("5m")) -> dict:
+    path = resolve_timeframe_path(timeframe)
+    df = pd.read_parquet(path)
+    normalized = normalize_bars(df)
+
+    return {
+        "timeframe": timeframe,
+        "path": str(path),
+        "raw_rows": len(df),
+        "normalized_rows": len(normalized),
+        "columns": list(df.columns),
+        "first_time": normalized["timestamp_et"].iloc[0] if len(normalized) else None,
+        "last_time": normalized["timestamp_et"].iloc[-1] if len(normalized) else None,
+        "duplicate_chart_times_after_normalize": int(normalized["time"].duplicated().sum()),
+        "is_time_monotonic_increasing": bool(normalized["time"].is_monotonic_increasing),
+    }
