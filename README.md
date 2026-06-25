@@ -108,6 +108,50 @@ data/processed/spy_1h_rth.parquet
 
 If the data later expands into multi-year, multi-symbol, or options-chain data, the project should move to a separate data-management strategy instead of committing everything.
 
+## Local chart viewer
+
+This repo includes a local browser-based chart viewer for inspecting SPY candles outside Jupyter notebooks.
+
+The viewer lives here:
+
+```text
+apps/chart_viewer/
+```
+
+It uses:
+
+- FastAPI backend to read local processed SPY data.
+- Vite + TypeScript frontend.
+- TradingView Lightweight Charts for interactive candlestick viewing.
+
+Run the backend from the repo root:
+
+```powershell
+uv run uvicorn apps.chart_viewer.backend.main:app --reload --port 8000
+```
+
+Run the frontend from the chart viewer frontend folder:
+
+```powershell
+cd apps/chart_viewer/frontend
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:5173
+```
+
+Current features:
+
+- switch between 1m / 5m / 30m / 1h processed SPY bars,
+- zoom and pan candles,
+- inspect OHLC values with the crosshair,
+- reload data from the local backend.
+
+This is a local research inspection tool, not a trading or execution interface.
+
 ## Documentation map
 
 - `README.md` — short human onboarding and setup.
