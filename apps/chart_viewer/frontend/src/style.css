@@ -14,7 +14,7 @@
 
 body {
   margin: 0;
-  min-width: 960px;
+  min-width: 1040px;
   min-height: 100vh;
   background:
     radial-gradient(circle at top left, rgba(34, 197, 94, 0.08), transparent 28rem),
@@ -35,7 +35,7 @@ input {
 }
 
 .topbar {
-  height: 84px;
+  min-height: 84px;
   padding: 14px 18px;
   border-bottom: 1px solid #1b2735;
   display: flex;
@@ -104,11 +104,35 @@ button:hover {
   border-color: #38bdf8;
 }
 
+.overlaybar {
+  min-height: 42px;
+  padding: 8px 18px;
+  border-bottom: 1px solid #1b2735;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: rgba(9, 14, 20, 0.82);
+}
+
+.check {
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+  color: #cbd5e1;
+  user-select: none;
+}
+
+.check input {
+  width: 15px;
+  height: 15px;
+  accent-color: #38bdf8;
+}
+
 .main {
   min-height: 0;
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(0, 1fr) 340px;
   gap: 14px;
   padding: 14px;
 }
@@ -145,4 +169,8 @@ pre {
   overflow: auto;
   font-size: 12px;
   line-height: 1.55;
+}
+
+#bar-info {
+  min-height: 410px;
 }
