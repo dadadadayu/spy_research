@@ -11,6 +11,7 @@ import {
   type IChartApi,
   type ISeriesApi,
   type LineData,
+  type Time,
   type UTCTimestamp,
 } from 'lightweight-charts';
 
@@ -70,6 +71,61 @@ type OverlayKey =
   | 'or60';
 
 const API_BASE = 'http://127.0.0.1:8000';
+const EXCHANGE_TIMEZONE = 'America/New_York';
+
+const etAxisFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: EXCHANGE_TIMEZONE,
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
+
+const etFullFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: EXCHANGE_TIMEZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+});
+
+function chartTimeToUnixSeconds(time: Time): number | null {
+  if (typeof time === 'number') {
+    return time;
+  }
+
+  if (typeof time === 'string') {
+    const parsed = Date.parse(`${time}T00:00:00Z`);
+    return Number.isFinite(parsed) ? Math.floor(parsed / 1000) : null;
+  }
+
+  const parsed = Date.UTC(time.year, time.month - 1, time.day);
+  return Number.isFinite(parsed) ? Math.floor(parsed / 1000) : null;
+}
+
+function formatExchangeAxisTime(time: Time): string {
+  const unixSeconds = chartTimeToUnixSeconds(time);
+  if (unixSeconds === null) {
+    return String(time);
+  }
+
+  return etAxisFormatter
+    .format(new Date(unixSeconds * 1000))
+    .replace(',', '');
+}
+
+function formatExchangeFullTime(time: Time): string {
+  const unixSeconds = chartTimeToUnixSeconds(time);
+  if (unixSeconds === null) {
+    return String(time);
+  }
+
+  return `${etFullFormatter.format(new Date(unixSeconds * 1000))} ET`;
+}
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div class="shell">
@@ -143,6 +199,9 @@ let latestMeta: FeatureBarsResponse['meta'] | null = null;
 
 const chart: IChartApi = createChart(chartEl, {
   autoSize: true,
+  localization: {
+    timeFormatter: formatExchangeFullTime,
+  },
   layout: {
     background: { type: ColorType.Solid, color: '#070b10' },
     textColor: '#d6dde8',
@@ -165,6 +224,7 @@ const chart: IChartApi = createChart(chartEl, {
     borderColor: '#304050',
     timeVisible: true,
     secondsVisible: false,
+    tickMarkFormatter: formatExchangeAxisTime,
   },
 });
 

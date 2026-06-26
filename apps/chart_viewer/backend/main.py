@@ -238,7 +238,14 @@ def normalize_bars(df: pd.DataFrame, include_features: bool = False) -> pd.DataF
     else:
         ts_utc = df["timestamp"].dt.tz_convert("UTC")
 
-    df["time"] = (ts_utc.astype("int64") // 1_000_000_000).astype(int)
+    # Convert to Unix seconds in a dtype-safe way.
+    #
+    # Do not use ``ts_utc.astype("int64") // 1_000_000_000`` here.
+    # Parquet/Arrow may load timestamps with microsecond precision instead of
+    # nanosecond precision, which would accidentally shrink 2023 timestamps
+    # into 1970-era chart times.
+    epoch = pd.Timestamp("1970-01-01", tz="UTC")
+    df["time"] = ((ts_utc - epoch).dt.total_seconds()).astype("int64")
     df["timestamp_et"] = df["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S")
 
     # Lightweight Charts requires strictly unique, ascending time values.
@@ -321,6 +328,8 @@ def debug(timeframe: Timeframe = Query("5m")) -> dict[str, Any]:
         "feature_columns_found": [col for col in FEATURE_COLUMNS if col in df.columns],
         "first_time": normalized["timestamp_et"].iloc[0] if len(normalized) else None,
         "last_time": normalized["timestamp_et"].iloc[-1] if len(normalized) else None,
+        "first_chart_time": int(normalized["time"].iloc[0]) if len(normalized) else None,
+        "last_chart_time": int(normalized["time"].iloc[-1]) if len(normalized) else None,
         "duplicate_chart_times_after_normalize": int(normalized["time"].duplicated().sum()),
         "is_time_monotonic_increasing": bool(normalized["time"].is_monotonic_increasing),
     }
