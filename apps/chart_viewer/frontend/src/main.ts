@@ -228,6 +228,10 @@ const chart: IChartApi = createChart(chartEl, {
   },
 });
 
+const sessionStripesEl = document.createElement('div');
+sessionStripesEl.className = 'session-stripes';
+chartEl.appendChild(sessionStripesEl);
+
 const candleSeries: ISeriesApi<'Candlestick'> = chart.addSeries(CandlestickSeries, {
   upColor: '#22c55e',
   downColor: '#ef4444',
@@ -448,6 +452,147 @@ function toLineData(bars: ApiBar[], key: keyof ApiBar): LineData[] {
   return dedupeSorted(rows);
 }
 
+
+type SessionSpan = {
+  sessionDate: string;
+  startTime: UTCTimestamp;
+  endTime: UTCTimestamp;
+  index: number;
+};
+
+function sessionDateForBar(bar: ApiBar): string {
+  if (bar.session_date) {
+    return String(bar.session_date);
+  }
+
+  return bar.timestamp_et.slice(0, 10);
+}
+
+function buildSessionSpans(bars: ApiBar[]): SessionSpan[] {
+  const spans: SessionSpan[] = [];
+  let currentSessionDate: string | null = null;
+  let currentStartTime: UTCTimestamp | null = null;
+  let currentEndTime: UTCTimestamp | null = null;
+
+  for (const bar of bars) {
+    const time = Number(bar.time);
+    if (!Number.isFinite(time)) {
+      continue;
+    }
+
+    const sessionDate = sessionDateForBar(bar);
+
+    if (currentSessionDate === null) {
+      currentSessionDate = sessionDate;
+      currentStartTime = time as UTCTimestamp;
+      currentEndTime = time as UTCTimestamp;
+      continue;
+    }
+
+    if (sessionDate !== currentSessionDate) {
+      if (currentStartTime !== null && currentEndTime !== null) {
+        spans.push({
+          sessionDate: currentSessionDate,
+          startTime: currentStartTime,
+          endTime: currentEndTime,
+          index: spans.length,
+        });
+      }
+
+      currentSessionDate = sessionDate;
+      currentStartTime = time as UTCTimestamp;
+      currentEndTime = time as UTCTimestamp;
+      continue;
+    }
+
+    currentEndTime = time as UTCTimestamp;
+  }
+
+  if (currentSessionDate !== null && currentStartTime !== null && currentEndTime !== null) {
+    spans.push({
+      sessionDate: currentSessionDate,
+      startTime: currentStartTime,
+      endTime: currentEndTime,
+      index: spans.length,
+    });
+  }
+
+  return spans;
+}
+
+function estimateVisibleBarSpacingPx(): number {
+  let previousX: number | null = null;
+
+  for (const bar of latestBars) {
+    const time = Number(bar.time);
+    if (!Number.isFinite(time)) {
+      continue;
+    }
+
+    const x = chart.timeScale().timeToCoordinate(time as UTCTimestamp);
+    if (x === null) {
+      continue;
+    }
+
+    if (previousX !== null) {
+      const spacing = Math.abs(x - previousX);
+      if (Number.isFinite(spacing) && spacing > 0) {
+        return spacing;
+      }
+    }
+
+    previousX = x;
+  }
+
+  return 6;
+}
+
+function renderSessionStripes(): void {
+  sessionStripesEl.innerHTML = '';
+
+  if (latestBars.length === 0) {
+    return;
+  }
+
+  const chartWidth = chartEl.clientWidth;
+  if (chartWidth <= 0) {
+    return;
+  }
+
+  const spans = buildSessionSpans(latestBars);
+  const halfBarSpacing = Math.max(1, estimateVisibleBarSpacingPx() / 2);
+
+  for (const span of spans) {
+    // Keep the first visible day on the normal dark background and tint every other day.
+    if (span.index % 2 === 0) {
+      continue;
+    }
+
+    const startX = chart.timeScale().timeToCoordinate(span.startTime);
+    const endX = chart.timeScale().timeToCoordinate(span.endTime);
+
+    if (startX === null || endX === null) {
+      continue;
+    }
+
+    const rawLeft = Math.min(startX, endX) - halfBarSpacing;
+    const rawRight = Math.max(startX, endX) + halfBarSpacing;
+    const left = Math.max(0, rawLeft);
+    const right = Math.min(chartWidth, rawRight);
+
+    if (right <= 0 || left >= chartWidth || right <= left) {
+      continue;
+    }
+
+    const stripe = document.createElement('div');
+    stripe.className = 'session-stripe';
+    stripe.style.left = `${left}px`;
+    stripe.style.width = `${right - left}px`;
+    stripe.title = span.sessionDate;
+    sessionStripesEl.appendChild(stripe);
+  }
+}
+
 function updateOverlayData(): void {
   volumeSeries.setData(overlayInputs.volume.checked ? toVolumeData(latestBars) : []);
 
@@ -502,6 +647,7 @@ async function loadBars(): Promise<void> {
   candleSeries.setData(candleData);
   updateOverlayData();
   chart.timeScale().fitContent();
+  requestAnimationFrame(renderSessionStripes);
 
   const first = latestBars[0]?.timestamp_et ?? 'n/a';
   const last = latestBars.at(-1)?.timestamp_et ?? 'n/a';
@@ -552,6 +698,15 @@ timeframeEl.addEventListener('change', () => {
 for (const input of Object.values(overlayInputs)) {
   input.addEventListener('change', updateOverlayData);
 }
+
+chart.timeScale().subscribeVisibleLogicalRangeChange(() => {
+  renderSessionStripes();
+});
+
+const chartResizeObserver = new ResizeObserver(() => {
+  renderSessionStripes();
+});
+chartResizeObserver.observe(chartEl);
 
 loadBars().catch((err) => {
   console.error(err);

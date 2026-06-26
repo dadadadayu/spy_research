@@ -147,6 +147,7 @@ button:hover {
 }
 
 #chart {
+  position: relative;
   width: 100%;
   height: 100%;
 }
@@ -173,4 +174,22 @@ pre {
 
 #bar-info {
   min-height: 410px;
+}
+
+
+.session-stripes {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.session-stripe {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(148, 163, 184, 0.035);
+  border-left: 1px solid rgba(148, 163, 184, 0.055);
+  border-right: 1px solid rgba(148, 163, 184, 0.025);
 }
