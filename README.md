@@ -36,6 +36,7 @@ ML, deep learning, options mapping, and execution are planned future layers, not
 spy_research/
 ├─ AGENTS.md
 ├─ PROJECT_PLAN.md
+├─ FEATURE_SPEC.md
 ├─ README.md
 ├─ pyproject.toml
 ├─ uv.lock
@@ -43,7 +44,8 @@ spy_research/
 │
 ├─ data/
 │  ├─ raw/
-│  └─ processed/
+│  ├─ processed/
+│  └─ features/
 │
 ├─ scripts/
 ├─ src/spy_research/
@@ -106,6 +108,21 @@ data/processed/spy_30m_rth.parquet
 data/processed/spy_1h_rth.parquet
 ```
 
+Planned shared feature outputs:
+
+```text
+data/features/spy_5m_rth_features.parquet
+data/features/spy_30m_rth_features.parquet
+data/features/spy_1h_rth_features.parquet
+```
+
+Setup-specific signal and label outputs should live under:
+
+```text
+outputs/signals/<setup_name>/<setup_version>/candidate_signals.csv
+outputs/signals/<setup_name>/<setup_version>/labeled_signals.csv
+```
+
 If the data later expands into multi-year, multi-symbol, or options-chain data, the project should move to a separate data-management strategy instead of committing everything.
 
 ## Local chart viewer
@@ -157,6 +174,7 @@ This is a local research inspection tool, not a trading or execution interface.
 - `README.md` — short human onboarding and setup.
 - `AGENTS.md` — Codex / AI-agent operating rules.
 - `PROJECT_PLAN.md` — roadmap, current phase, and progress log.
+- `FEATURE_SPEC.md` — feature schema, artifact hierarchy, signal/label file rules, and chart overlay mapping.
 - `docs/DATA_VALIDATION_REPORT.md` — historical data-validation snapshot.
 
 ## Next milestone

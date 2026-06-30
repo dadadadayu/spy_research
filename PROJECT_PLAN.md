@@ -53,7 +53,7 @@ Completed foundation:
 - Validation and processed-data scripts exist.
 - Starter notebooks exist.
 - Modular `src/spy_research` package exists.
-- Root documentation has been simplified to `README.md`, `AGENTS.md`, and `PROJECT_PLAN.md`.
+- Root documentation has been simplified to `README.md`, `AGENTS.md`, `PROJECT_PLAN.md`, and `FEATURE_SPEC.md`.
 
 Important data facts:
 
@@ -92,6 +92,9 @@ AGENTS.md
 
 PROJECT_PLAN.md
     Project roadmap, current phase, current progress, next milestone.
+
+FEATURE_SPEC.md
+    Feature schema, artifact hierarchy, signal/label file rules, chart overlay mapping.
 ```
 
 Historical or detailed reports should live under:
@@ -102,6 +105,20 @@ outputs/reports/
 ```
 
 Do not create many overlapping root `.md` files.
+
+## Research artifact rule
+
+The detailed schema and artifact rules live in `FEATURE_SPEC.md`. The high-level rule is:
+
+```text
+raw/processed OHLCV = market-data foundation
+shared feature tables = reusable market-state data
+candidate signals = setup/version-specific rule-fire rows
+labeled signals = candidate signals plus future outcomes
+ML event datasets = feature snapshots at signal time plus labels
+```
+
+Feature tables should be shared across hypotheses whenever possible. Signal and label files should be setup/version-specific so each hypothesis can be evaluated honestly.
 
 ## Immediate next milestone
 
@@ -253,15 +270,19 @@ Failure modes:
 Outputs:
 
 ```text
-outputs/signals/candidate_signals.csv
+outputs/signals/<setup_name>/<setup_version>/candidate_signals.csv
+outputs/signals/<setup_name>/<setup_version>/labeled_signals.csv
 notebooks/02_signal_prototype.ipynb
 src/spy_research/signals/
+src/spy_research/labels/
 ```
 
 Exit criteria:
 
 - Signal output is timestamped.
 - Signal uses only information available at signal time.
+- Each candidate signal can receive a defined future-outcome label.
+- Signal and label artifacts are setup/version-specific.
 - Signal can be backtested on SPY underlying.
 
 ## Phase 4 — Underlying-only backtest
@@ -565,5 +586,6 @@ Exit criteria:
 - `README.md` reduced to onboarding/setup.
 - `AGENTS.md` reduced to AI-agent behavior and standards.
 - `PROJECT_PLAN.md` now owns roadmap, current phase, and progress.
+- `FEATURE_SPEC.md` owns feature schema, artifact hierarchy, and signal/label file rules.
 - Recommendation: move detailed data validation report to `docs/DATA_VALIDATION_REPORT.md`.
 - Recommendation: remove root `PROJECT_STATUS.md` after merging status here.

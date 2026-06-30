@@ -136,6 +136,161 @@ data/features/spy_5m_rth_features.csv
 
 If files remain small, they can be tracked in Git for Mac/Windows portability.
 
+## Research artifact hierarchy
+
+Keep the main research artifacts separated by responsibility.
+
+```text
+raw OHLCV
+→ processed OHLCV
+→ shared feature tables
+→ setup/version-specific candidate signals
+→ setup/version-specific labeled signals
+→ ML event datasets / backtests / reports
+```
+
+Strict source-of-truth hierarchy:
+
+```text
+data/raw/
+    Immutable original market data. Do not overwrite.
+
+data/processed/
+    Cleaned/resampled OHLCV bars used by research.
+
+data/features/
+    Canonical derived market-state tables. Shared across hypotheses.
+
+outputs/signals/
+    Setup/version-specific signal and label artifacts.
+
+outputs/reports/, outputs/backtests/, outputs/ml/
+    Analysis, evaluation, and model artifacts derived from the above.
+```
+
+Important rule:
+
+```text
+Feature tables are shared.
+Candidate signal files and labeled signal files are hypothesis/setup-specific.
+```
+
+Do not create a separate feature table for every hypothesis by default. If a new hypothesis needs reusable information that is known at decision time, add a clearly named feature to the shared feature table. If a feature is experimental or may change meaning, version it or keep it in a temporary experiment artifact until it is stable.
+
+## Signal and label artifact rules
+
+A setup is a fixed rule recipe. A signal is one timestamp where that recipe fires.
+
+Signal detection should normally:
+
+```text
+load shared feature table
+loop through all eligible feature rows
+apply one fixed setup/version rule
+write only candidate signal rows
+```
+
+Recommended candidate signal path:
+
+```text
+outputs/signals/<setup_name>/<setup_version>/candidate_signals.csv
+```
+
+Recommended candidate signal columns:
+
+| Column | Description |
+|---|---|
+| `signal_time` | Bar timestamp that generated the signal. |
+| `decision_time` | Earliest realistic decision/action time. |
+| `setup_name` | Stable setup family name, e.g. `or30_breakout_long`. |
+| `setup_version` | Version such as `v1`. |
+| `side` | `long` or `short`. |
+| `entry_reference_price` | Price used for labeling/backtest reference. |
+| `timeframe` | Source timeframe, e.g. `5m`. |
+| `notes` | Optional human-readable rule/context note. |
+
+Labeling should normally:
+
+```text
+load shared feature/bar table
+load candidate signal rows
+loop through signal rows only
+look forward according to the label definition
+append future outcome fields
+write labeled signal rows
+```
+
+Recommended labeled signal path:
+
+```text
+outputs/signals/<setup_name>/<setup_version>/labeled_signals.csv
+```
+
+Recommended labeled signal columns include all candidate signal columns plus:
+
+| Column | Description |
+|---|---|
+| `label_name` | Exact label definition name. |
+| `label_value` | Binary, categorical, or numeric label result. |
+| `lookahead_bars` | Maximum future bars checked. |
+| `target_pts` / `target_pct` | Target definition when relevant. |
+| `stop_pts` / `stop_pct` | Stop definition when relevant. |
+| `hit_target_before_stop` | Common first binary label. |
+| `mfe_pts` | Max favorable excursion after signal. |
+| `mae_pts` | Max adverse excursion after signal. |
+| `bars_to_target` | Bars until target, if hit. |
+| `bars_to_stop` | Bars until stop, if hit. |
+| `label_status` | `ok`, `insufficient_future_bars`, or another explicit reason. |
+
+Every candidate signal should eventually receive either a valid label or an explicit `label_status` explaining why it could not be labeled.
+
+A label is a future outcome, not the rule that fired. For example:
+
+```text
+signal: setup conditions are true now
+label: target hit before stop within N bars afterward
+```
+
+## ML dataset rule
+
+ML does not require separate feature/signal/label files, but clean research does. The ML training table should be created from the separated artifacts.
+
+Recommended ML event dataset shape:
+
+```text
+one row per candidate signal
++ feature snapshot from signal/decision time
++ label columns from future outcome
+```
+
+In ML language:
+
+```text
+X = feature columns available at prediction time
+y = label column created from future outcome
+signal rows = the event universe being scored
+```
+
+The signal chooses which timestamps become ML examples. The label says whether those examples worked according to the hypothesis.
+
+## Joined debug and chart-viewer tables
+
+For human inspection, chart overlays, and debugging, it is acceptable to join signals and labels back onto bar/feature data.
+
+Example debug shape:
+
+```text
+timestamp | OHLCV | features | signal_marker | label/result_marker
+```
+
+This joined table is a convenience artifact, not the canonical research source. The canonical artifacts remain:
+
+```text
+data/features/<symbol>_<timeframe>_features.parquet
+outputs/signals/<setup_name>/<setup_version>/candidate_signals.csv
+outputs/signals/<setup_name>/<setup_version>/labeled_signals.csv
+```
+
 ## Naming conventions
 
 Use snake_case.
@@ -885,6 +1040,15 @@ First feature goal:
 
 ```text
 Build a clean SPY intraday state table, not an indicator pile.
+```
+
+Core artifact rule:
+
+```text
+Shared feature table = reusable market-state source for hypotheses.
+Candidate signals = setup/version-specific moments where fixed rules fire.
+Labeled signals = those same moments plus future outcomes.
+ML event dataset = feature snapshot at signal time plus label.
 ```
 
 The best immediate feature families are:

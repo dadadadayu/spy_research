@@ -160,6 +160,42 @@ Do not rescue a weak underlying signal with options.
 
 Do not add broker/order logic before signal and option mapping layers are validated.
 
+## Research artifact separation
+
+Keep feature generation, signal detection, and future-outcome labeling separate and auditable.
+
+Canonical hierarchy:
+
+```text
+data/raw/
+    Immutable original market data.
+
+data/processed/
+    Cleaned/resampled OHLCV bars.
+
+data/features/
+    Shared derived market-state tables.
+
+outputs/signals/<setup_name>/<setup_version>/candidate_signals.csv
+    Setup/version-specific rows where a fixed rule fires.
+
+outputs/signals/<setup_name>/<setup_version>/labeled_signals.csv
+    Same signal rows with future outcome labels and path metrics.
+```
+
+Rules:
+
+- Feature tables are shared across hypotheses whenever possible.
+- Candidate signals and labeled signals are setup/version-specific experiment artifacts.
+- A signal is a timestamp where setup conditions are true.
+- A label is a future outcome attached to a signal, not the setup rule itself.
+- Signal scripts should scan eligible feature rows.
+- Label scripts should loop through signal rows and look forward in bar/feature data.
+- ML event datasets should be built from separated artifacts, usually one row per signal with feature snapshots and label columns.
+- Joined feature/signal/label tables are allowed for chart debugging, but they are convenience artifacts, not the canonical research source.
+
+Do not mix feature generation, signal detection, and labeling into one opaque output unless it is a temporary notebook exploration that will later be split into reusable code.
+
 ## ML and deep-learning policy
 
 ML and deep learning are definitely part of the long-term plan.
@@ -197,7 +233,10 @@ It is acceptable to track:
 data/raw/*.csv
 data/processed/*.parquet
 data/processed/*.csv
+data/features/*.parquet
+data/features/*.csv
 outputs/reports/*.csv
+outputs/signals/**/*.csv
 ```
 
 Do not delete, rename, or overwrite raw data unless explicitly asked.
